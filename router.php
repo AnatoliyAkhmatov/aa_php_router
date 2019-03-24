@@ -12,7 +12,9 @@ class Router {
 		$url = strtok($_SERVER["REQUEST_URI"], '?');
 		$method = $_SERVER['REQUEST_METHOD'];
 
-		$options = array_merge($options, ($method === 'GET' ? $_GET : $method === 'PUT' ? $_PUT : $_POST));
+		if ($method === 'GET') $options = array_merge($options, $_GET);
+		if ($method === 'POST') $options = array_merge($options, $_POST);
+		if ($method === 'PUT') $options = array_merge($options, $_PUT);
 
 		$this->options = (object) $options;
 		$this->url = $url;
