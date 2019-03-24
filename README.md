@@ -1,4 +1,4 @@
-# wordpress_router
+# wordpress / native php router
 
 check api tokens in headers
 ```php
