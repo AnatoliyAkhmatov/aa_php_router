@@ -47,7 +47,7 @@ $router->post('/api\/users$/', function($options) {
 send json
 ```
 // native
-echo json_decode([...];
+echo json_encode([...]);
 
 // for wordpress
 wp_send_json([...]);
