@@ -24,7 +24,6 @@ class Router {
 		];
 		$token = getallheaders()['api_token'];
 		$this->autorize = in_array($token, $tokens) ? true : false;
-		echo $this->autorize;
 	}
 
 	public function get($url, $handler) {
