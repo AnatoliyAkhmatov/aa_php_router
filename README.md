@@ -6,7 +6,7 @@ initialize a router
 $router = new Router;
 ```
 
-create a routers with regular expression and without get arguments
+create a routers
 ```php
 $router->get('/api', function($options) { ... })
 $router->post('/api', function($options) { ... })
