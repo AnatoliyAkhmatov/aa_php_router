@@ -1,31 +1,21 @@
-class Router {
+<?php
 
+
+class Router {
 	function __construct() {
 
-
-		/*
-		default options
-		*/
-		$options = [
-			'lang' => 'ru'
-		];
+		$options = [];
 		$url = strtok($_SERVER["REQUEST_URI"], '?');
 		$method = $_SERVER['REQUEST_METHOD'];
 
 		if ($method === 'GET') $options = array_merge($options, $_GET);
-		if ($method === 'POST') $options = array_merge($options, $_POST);
+		if ($method === 'POST') $options = array_merge($options, (array) (json_decode(file_get_contents('php://input'), true)));
 		if ($method === 'PUT') $options = array_merge($options, $_PUT);
+		$options['url'] = $url;
 
 		$this->options = (object) $options;
 		$this->url = $url;
 		$this->method = $method;
-
-
-		$tokens = [
-			'XCrb1TDueG' // vilatiy
-		];
-		$token = getallheaders()['api_token'];
-		$this->autorize = in_array($token, $tokens) ? true : false;
 	}
 
 	public function get($url, $handler) {
@@ -44,40 +34,49 @@ class Router {
 		$this->route($url, 'PUT', $handler);
 	}
 
-	private function route($url, $method, $handler) {
-		$matches = '';
-		preg_match($url, $this->url, $matches);
-		if ($this->autorize && $matches && $this->method === $method) {
+	public static function match($matched, $url) {
+		$res = (object) [
+			'match' => false,
+			'vars' => []
+		];
 
-			header('Access-Control-Allow-Origin: *');
-			header('Content-Type: application/json');
-			header("HTTP/1.1 200 OK");
+		preg_match_all('/\{.+?\}/', $matched, $vars);
+		if (!empty($vars[0])) {
+			$vars = $vars[0];
+			$matched = str_replace($vars, '(.+?)', $matched);
+			$matched = str_replace('/', '\/', $matched);
+			preg_match('/^' . $matched . '$/', $url, $matched);
+
+			$matched_count = count($matched);
+			if (count($vars) == $matched_count - 1) {
+				for ($x = 1; $x < $matched_count; $x++) {
+					$var_name = str_replace(['{', '}'], '', $vars[$x - 1]);
+					$res->vars[$var_name] = $matched[$x];
+				}
+				$res->match = true;
+			} else {
+				// not match
+			}
+		} else {
+			$res->match = $matched === $url;
+		}
+
+		return $res;
+	}
+
+	private function route($url, $method, $handler) {
+		$matches = $this->match($url, $this->url);
+
+		if ($matches->match && $this->method === $method) {
+			$this->options->matches = $matches;
+
+			if (!empty($matches->vars)) {
+				$this->options = (object) (array_merge((array) $this->options, $matches->vars));
+			}
+
+			$this->options = strip($this->options);
 
 			$handler($this->options);
-
-			die();
 		}
 	}
 }
-
-
-
-$router = new Router;
-$router->get('/api\/jobs\/tags$/', function($options) {
-
-	$response = [];
-
-	$items = get_tags([
-		'hide_empty' => false,
-		'lang'			 => $options->lang
-	]);
-
-	foreach( $items as $item ):
-		$response[] = [
-			'name' => $item->name,
-			'id' => $item->term_id
-		];
-	endforeach;
-
-	wp_send_json($response);
-});
